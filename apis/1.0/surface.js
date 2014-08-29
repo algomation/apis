@@ -37,9 +37,15 @@ var algo = algo || {};
 algo.render = algo.render || {};
 
 /**
+ *
+ * @const {algo.render.Surface} Singleton instance of surface
+ */
+algo.SURFACE = null;
+
+/**
  * an animation / display surface composed of n layers, each composed of n elements.
  */
-algo.render.surface = function (options) {
+algo.render.Surface = function (options) {
 
     // setup singleton. There is only ever one surface so this is the best way to access it
     algo.SURFACE = this;
@@ -65,11 +71,11 @@ algo.render.surface = function (options) {
 
         this.commandHandlers = {};
 
-        //this.commandHandlers[algo.render.surface.CREATE_COMMAND] = this.handleCreateCommand;
+        //this.commandHandlers[algo.render.Surface.CREATE_COMMAND] = this.handleCreateCommand;
 
-        this.commandHandlers[algo.render.surface.UPDATE_COMMAND] = this.handleUpdateCommand;
+        this.commandHandlers[algo.render.Surface.UPDATE_COMMAND] = this.handleUpdateCommand;
 
-        this.commandHandlers[algo.render.surface.DESTROY_COMMAND] = this.handleDestroyCommand;
+        this.commandHandlers[algo.render.Surface.DESTROY_COMMAND] = this.handleDestroyCommand;
 
 
     } else {
@@ -100,47 +106,47 @@ algo.render.surface = function (options) {
 /**
  * true if we are the worker library
  */
-algo.render.surface.prototype.__defineGetter__('isWorker', function () {
+algo.render.Surface.prototype.__defineGetter__('isWorker', function () {
 
-    return this.options.location === algo.render.surface.WORKER;
+    return this.options.location === algo.render.Surface.WORKER;
 });
 
 /**
  * true if we are the DOM library
  */
-algo.render.surface.prototype.__defineGetter__('isDOM', function () {
+algo.render.Surface.prototype.__defineGetter__('isDOM', function () {
 
-    return this.options.location === algo.render.surface.DOM;
+    return this.options.location === algo.render.Surface.DOM;
 });
 
 /**
  * these constants indicate the location of this instance of the surface
  * @type {string}
  */
-algo.render.surface.WORKER = 'worker';
+algo.render.Surface.WORKER = 'worker';
 
-algo.render.surface.DOM = 'dom';
+algo.render.Surface.DOM = 'dom';
 
 /**
  * these constants define all the commands that the worker may send to the DOM
  * @type {string}
  */
-//algo.render.surface.CREATE_COMMAND = 'createElement';
+//algo.render.Surface.CREATE_COMMAND = 'createElement';
 
-algo.render.surface.UPDATE_COMMAND = 'updateElement';
+algo.render.Surface.UPDATE_COMMAND = 'updateElement';
 
-algo.render.surface.DESTROY_COMMAND = 'destroyElement';
+algo.render.Surface.DESTROY_COMMAND = 'destroyElement';
 
 /**
  * when an element is created
  * @param element
  * @param options
  */
-//algo.render.surface.prototype.elementCreated = function (element, options) {
+//algo.render.Surface.prototype.elementCreated = function (element, options) {
 //
 //    // generate a create command if we are the worker
 //
-//    this.addCommand(algo.render.surface.CREATE_COMMAND, element, options);
+//    this.addCommand(algo.render.Surface.CREATE_COMMAND, element, options);
 //
 //};
 
@@ -149,11 +155,11 @@ algo.render.surface.DESTROY_COMMAND = 'destroyElement';
  * @param element
  * @param options
  */
-algo.render.surface.prototype.elementDestroyed = function (element) {
+algo.render.Surface.prototype.elementDestroyed = function (element) {
 
     // generate a create command
 
-    this.addCommand(algo.render.surface.DESTROY_COMMAND, element, {});
+    this.addCommand(algo.render.Surface.DESTROY_COMMAND, element, {});
 
 };
 
@@ -163,11 +169,11 @@ algo.render.surface.prototype.elementDestroyed = function (element) {
  * @param element
  * @param options
  */
-algo.render.surface.prototype.elementUpdated = function (element, options) {
+algo.render.Surface.prototype.elementUpdated = function (element, options) {
 
     // generate a create command
 
-    this.addCommand(algo.render.surface.UPDATE_COMMAND, element, options);
+    this.addCommand(algo.render.Surface.UPDATE_COMMAND, element, options);
 
 };
 
@@ -178,7 +184,7 @@ algo.render.surface.prototype.elementUpdated = function (element, options) {
  * @param name
  * @param options
  */
-algo.render.surface.prototype.addCommand = function (name, element, options) {
+algo.render.Surface.prototype.addCommand = function (name, element, options) {
 
     // ignore if we aren't the worker side
     if (this.isDOM) {
@@ -205,11 +211,11 @@ algo.render.surface.prototype.addCommand = function (name, element, options) {
     // if there is an update command for this element already in the buffer then just extend it with the new
     // options, otherwise create a new command
 
-    if (name === algo.render.surface.UPDATE_COMMAND) {
+    if (name === algo.render.Surface.UPDATE_COMMAND) {
 
         var existingCommand = _.find(this.commands, function (command) {
 
-            return command.name === algo.render.surface.UPDATE_COMMAND && command.options.id === c.id;
+            return command.name === algo.render.Surface.UPDATE_COMMAND && command.options.id === c.id;
 
         }, this);
 
@@ -234,7 +240,7 @@ algo.render.surface.prototype.addCommand = function (name, element, options) {
 /**
  * return a shallow copy of our current commands and reset the buffer
  */
-algo.render.surface.prototype.flushCommands = function () {
+algo.render.Surface.prototype.flushCommands = function () {
 
     var buffer = this.commands.slice();
 
@@ -246,7 +252,7 @@ algo.render.surface.prototype.flushCommands = function () {
 /**
  * execute commands from the worker on the dom
  */
-algo.render.surface.prototype.executeCommands = function (commands) {
+algo.render.Surface.prototype.executeCommands = function (commands) {
 
     // iterate all commands in the buffer
 
@@ -285,7 +291,7 @@ algo.render.surface.prototype.executeCommands = function (commands) {
 // * create element command handler
 // * @param options
 // */
-//algo.render.surface.prototype.handleCreateCommand = function (options) {
+//algo.render.Surface.prototype.handleCreateCommand = function (options) {
 //
 //    // invoke the constructor for class using the name of the class
 //
@@ -310,7 +316,7 @@ algo.render.surface.prototype.executeCommands = function (commands) {
  * update element command handler
  * @param options
  */
-algo.render.surface.prototype.handleUpdateCommand = function (options) {
+algo.render.Surface.prototype.handleUpdateCommand = function (options) {
 
     // if this is new element we need to construct it
 
@@ -344,7 +350,7 @@ algo.render.surface.prototype.handleUpdateCommand = function (options) {
  * return null
  * @param options
  */
-algo.render.surface.prototype.processOptions = function (options) {
+algo.render.Surface.prototype.processOptions = function (options) {
 
     // reset more flag in options,
     options.more = false;
@@ -381,7 +387,7 @@ algo.render.surface.prototype.processOptions = function (options) {
  * handle an element destory command
  * @param options
  */
-algo.render.surface.prototype.handleDestroyCommand = function (options) {
+algo.render.Surface.prototype.handleDestroyCommand = function (options) {
 
     // get the element
 
@@ -393,7 +399,7 @@ algo.render.surface.prototype.handleDestroyCommand = function (options) {
 /**
  * update the surface and all layers and all elements on those layers
  */
-algo.render.surface.prototype.update = function () {
+algo.render.Surface.prototype.update = function () {
 
     // call update on the root element which recursively calls children
 
@@ -410,7 +416,7 @@ algo.render.surface.prototype.update = function () {
 /**
  * perform various validations of the state of the surface and the elements on it.
  */
-algo.render.surface.prototype.validate = function () {
+algo.render.Surface.prototype.validate = function () {
 
     // validate on DOM side only, but not in production
     if (this.isDOM && !algo.G.live) {

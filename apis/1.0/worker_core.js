@@ -101,9 +101,9 @@ var WorkerApp = function (worker, algorithmURI, api) {
 
     // create our surface and tell it that it is running in a worker not the DOM
 
-    this.surface = new algo.render.surface({
+    this.surface = new algo.render.Surface({
 
-        location: algo.render.surface.WORKER,
+        location: algo.render.Surface.WORKER,
         bounds  : new algo.layout.Box(0, 0, 900, 556)
 
     });

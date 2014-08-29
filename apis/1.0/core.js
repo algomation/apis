@@ -38,11 +38,6 @@ var algo = algo || {};
 algo.core = {};
 
 /**
- * @namespace algo.graph
- */
-algo.graph = {};
-
-/**
  * This is the most basic way to implement class inheritance in JavaScript.
  * The prototype property of the progeny class ( the new class ) is simply copied from the prototype property
  * if the progenitor class ( the base class ). After that we simple ensure that the correct constructor
@@ -747,7 +742,7 @@ algo.core.DataStructure.prototype.hasFunction = function (functionName) {
  * directed edges, self connected vertices.
  * @constructor
  */
-algo.graph.Graph = function (options) {
+algo.core.Graph = function (options) {
 
     // progenitor initialization
     algo.core.DataStructure.call(this, options);
@@ -799,17 +794,17 @@ algo.graph.Graph = function (options) {
 /**
  * graph extends DataStructure
  */
-algo.core.extends(algo.core.DataStructure, algo.graph.Graph);
+algo.core.extends(algo.core.DataStructure, algo.core.Graph);
 
 /**
  * add a vertex to the graph and invoke the optional callback
  * @param properties
- * @returns {algo.graph.GraphVertex}
+ * @returns {algo.core.GraphVertex}
  */
-algo.graph.Graph.prototype.addVertex = function (properties) {
+algo.core.Graph.prototype.addVertex = function (properties) {
 
     // create the vertex with the given properties and add to the map of vertices
-    var vertex = new algo.graph.GraphVertex(this.nextVertexId++, properties);
+    var vertex = new algo.core.GraphVertex(this.nextVertexId++, properties);
     this.vertices[vertex.id] = vertex;
 
     // invoke the createVertex callback to obtain the element for the vertex
@@ -820,10 +815,10 @@ algo.graph.Graph.prototype.addVertex = function (properties) {
 
 /**
  * remove a vertex from the graph
- * @param {algo.graph.GraphVertex} vertex
+ * @param {algo.core.GraphVertex} vertex
  * @returns {Array} any edges that were removed in addition to the vertex that was removed
  */
-algo.graph.Graph.prototype.removeVertex = function (vertex) {
+algo.core.Graph.prototype.removeVertex = function (vertex) {
 
     // first destroy the vertex element if any, if no destroy method was provided do it ourselves
     if (vertex.element) {
@@ -859,12 +854,12 @@ algo.graph.Graph.prototype.removeVertex = function (vertex) {
  * @param source
  * @param target
  * @param properties
- * @returns {algo.graph.GraphEdge}
+ * @returns {algo.core.GraphEdge}
  */
-algo.graph.Graph.prototype.addEdge = function (source, target, properties) {
+algo.core.Graph.prototype.addEdge = function (source, target, properties) {
 
     // create new edge
-    var edge = new algo.graph.GraphEdge(this.nextEdgeId++, source, target, properties);
+    var edge = new algo.core.GraphEdge(this.nextEdgeId++, source, target, properties);
     this.edges[edge.id] = edge;
 
     // get visual element if the user has supplied the appropriate callback
@@ -877,7 +872,7 @@ algo.graph.Graph.prototype.addEdge = function (source, target, properties) {
  * remove an edge from the graph. Removed references to that edge from each vertex
  * @param edge
  */
-algo.graph.Graph.prototype.removeEdge = function (edge) {
+algo.core.Graph.prototype.removeEdge = function (edge) {
 
     // if the edge has a visual element, destroy it first, if not provided do it ourselves
     if (edge.element) {
@@ -901,7 +896,7 @@ algo.graph.Graph.prototype.removeEdge = function (edge) {
 /**
  * helper for making pretty graphs. Remove any vertex that has no edge
  */
-algo.graph.Graph.prototype.removeEdgelessVertices = function () {
+algo.core.Graph.prototype.removeEdgelessVertices = function () {
 
     _.each(this.vertices, _.bind(function(v) {
 
@@ -918,7 +913,7 @@ algo.graph.Graph.prototype.removeEdgelessVertices = function () {
  * @param property
  * @param value
  */
-algo.graph.Graph.prototype.findVertices = function (property, value) {
+algo.core.Graph.prototype.findVertices = function (property, value) {
 
     // search all vertices with the given property of the given value
     return _.filter(this.vertices, function (vertex) {
@@ -931,7 +926,7 @@ algo.graph.Graph.prototype.findVertices = function (property, value) {
  * @param v1
  * @param v2
  */
-algo.graph.Graph.prototype.getEdges = function (source, target) {
+algo.core.Graph.prototype.getEdges = function (source, target) {
 
     return _.filter(source.outEdges, function (edge) {
         return edge.target.id === target.id;
@@ -944,7 +939,7 @@ algo.graph.Graph.prototype.getEdges = function (source, target) {
  * @param target
  * @returns boolean
  */
-algo.graph.Graph.prototype.hasEdge = function (source, target) {
+algo.core.Graph.prototype.hasEdge = function (source, target) {
 
     return this.getEdges(source, target).length > 0;
 };
@@ -954,7 +949,7 @@ algo.graph.Graph.prototype.hasEdge = function (source, target) {
  * @param vertex
  * @return {Array} all the edges attached to this vertex regardless of direction
  */
-algo.graph.Graph.prototype.getVertexEdges = function (vertex) {
+algo.core.Graph.prototype.getVertexEdges = function (vertex) {
 
     // we use union to ensure that an edge connecting a vertex to itself is only present once in the list
     return _.union(_.values(vertex.outEdges), _.values(vertex.inEdges));
@@ -963,10 +958,10 @@ algo.graph.Graph.prototype.getVertexEdges = function (vertex) {
 /**
  * return a set of vertices that have edges pointing at the given vertex. Since multi-edges are supported
  * we ensure a set is returned
- * @param {algo.graph.GraphVertex} vertex
- * @return {Array} - array of algo.graph.GraphVertex
+ * @param {algo.core.GraphVertex} vertex
+ * @return {Array} - array of algo.core.GraphVertex
  */
-algo.graph.Graph.prototype.getInVertices = function(vertex) {
+algo.core.Graph.prototype.getInVertices = function(vertex) {
 
     return _.uniq(_.map(vertex.inEdges, function(e) {
         return e.source;
@@ -975,10 +970,10 @@ algo.graph.Graph.prototype.getInVertices = function(vertex) {
 
 /**
  * return a set of vertices that are connected to the given vertex by an out bound edge
- * @param {algo.graph.GraphVertex} vertex
- * @return {Array} - array of algo.graph.GraphVertex
+ * @param {algo.core.GraphVertex} vertex
+ * @return {Array} - array of algo.core.GraphVertex
  */
-algo.graph.Graph.prototype.getOutVertices = function(vertex) {
+algo.core.Graph.prototype.getOutVertices = function(vertex) {
 
     return _.uniq(_.map(vertex.outEdges, function(e) {
         return e.target;
@@ -989,10 +984,10 @@ algo.graph.Graph.prototype.getOutVertices = function(vertex) {
 /**
  * return a set of vertices that are connected to the given vertex or vertex list by an in or out edge
  * NOTE: The list does not include the starting vertex or vertices.
- * @param {algo.graph.GraphVertex | Array} vertex
- * @return {Array} - array of algo.graph.GraphVertex
+ * @param {algo.core.GraphVertex | Array} vertex
+ * @return {Array} - array of algo.core.GraphVertex
  */
-algo.graph.Graph.prototype.getAdjacentVertices = function(vertex) {
+algo.core.Graph.prototype.getAdjacentVertices = function(vertex) {
 
     var a = _.isArray(vertex) ? vertex : [vertex];
 
@@ -1012,7 +1007,7 @@ algo.graph.Graph.prototype.getAdjacentVertices = function(vertex) {
  * a useful helper function for testing and simple visualization, adds a random edge between two random vertices
  * that are not already connected in either direction
  */
-algo.graph.Graph.prototype.addRandomEdge = function (properties) {
+algo.core.Graph.prototype.addRandomEdge = function (properties) {
 
     // get an array of all vertices in random order
     var vrandom = _.shuffle(_.values(this.vertices));
@@ -1046,7 +1041,7 @@ algo.graph.Graph.prototype.addRandomEdge = function (properties) {
  * return a list of list of vertices where each sublist defines a discrete/connected component of the graph.
  * The components are sorted according to size with the largest components first.
  */
-algo.graph.Graph.prototype.getComponents = function () {
+algo.core.Graph.prototype.getComponents = function () {
 
     // start with an empty list of components
     var components = [];
@@ -1089,7 +1084,7 @@ algo.graph.Graph.prototype.getComponents = function () {
 };
 
 /**
- * graph vertex for algo.graph.Graph class
+ * graph vertex for algo.core.Graph class
  * You can add additional properties to the vertices e.g. mass for layout algorithms but the id property
  * must be treated as read-only.
  *
@@ -1097,7 +1092,7 @@ algo.graph.Graph.prototype.getComponents = function () {
  * @param {object} properties - used defined properties of the vertex
  * @constructor
  */
-algo.graph.GraphVertex = function (id, properties) {
+algo.core.GraphVertex = function (id, properties) {
 
     // save our id and initialize lists of out / in edges
     this.id = id;
@@ -1115,11 +1110,11 @@ algo.graph.GraphVertex = function (id, properties) {
 /**
  * edges connect two vertices or a single vertex
  * @param {number} id
- * @param {algo.graph.GraphVertex} source
- * @param {algo.graph.GraphVertex} target
+ * @param {algo.core.GraphVertex} source
+ * @param {algo.core.GraphVertex} target
  * @constructor
  */
-algo.graph.GraphEdge = function (id, source, target, properties) {
+algo.core.GraphEdge = function (id, source, target, properties) {
 
     // save id and source/target vertex
 
@@ -1142,7 +1137,7 @@ algo.graph.GraphEdge = function (id, source, target, properties) {
  * @param edge
  * @param newTarget
  */
-algo.graph.GraphEdge.prototype.setTarget = function (newTarget) {
+algo.core.GraphEdge.prototype.setTarget = function (newTarget) {
 
     delete this.target.inEdges[this.id];
     this.target = newTarget;
@@ -1154,7 +1149,7 @@ algo.graph.GraphEdge.prototype.setTarget = function (newTarget) {
  * @param edge
  * @param newSource
  */
-algo.graph.GraphEdge.prototype.setSource = function (newSource) {
+algo.core.GraphEdge.prototype.setSource = function (newSource) {
 
     delete this.source.outEdges[this.id];
     this.source = newSource;
@@ -1164,25 +1159,25 @@ algo.graph.GraphEdge.prototype.setSource = function (newSource) {
 /**
  * @returns {boolean} returns true if the edge is connected to itself
  */
-algo.graph.GraphEdge.isSelfConnected = function () {
+algo.core.GraphEdge.isSelfConnected = function () {
     return this.source.id === this.target.id;
 };
 
 // **BinaryTree** is just a special kind of direct acyclic graph and can therefore be created from the **GenericGraph** class
-algo.graph.BinaryTree = function (options) {
+algo.core.BinaryTree = function (options) {
 
     // call progenitor to initialize instance
-    algo.graph.Graph.call(this, options);
+    algo.core.Graph.call(this, options);
 
 };
 // **BinaryTree** inherits functionality from **Graph**
-algo.core.extends(algo.graph.Graph, algo.graph.BinaryTree);
+algo.core.extends(algo.core.Graph, algo.core.BinaryTree);
 
 // This must be called after any changes to the BinaryTree. It sets the .parent property of each
 // vertex to its current parent. Operations like add, remove, balance etc will disturb the trees
 // topology. Fixing up the parent property afterwards makes the code much simpler, but less effecient,
 // than incrementally updating the parent property.
-algo.graph.BinaryTree.prototype.setParents = function (currentNode, parent) {
+algo.core.BinaryTree.prototype.setParents = function (currentNode, parent) {
 
     if (currentNode) {
         currentNode.parent = parent;
@@ -1193,10 +1188,10 @@ algo.graph.BinaryTree.prototype.setParents = function (currentNode, parent) {
 
 // **addVertex** replaces the progenitors version with a version that inserts a vertex into
 // the binary tree structure and updates edges as necessary
-algo.graph.BinaryTree.prototype.addVertex = function (properties) {
+algo.core.BinaryTree.prototype.addVertex = function (properties) {
 
     // create extended object TreeVertex versus GraphVertex
-    var n = new algo.graph.TreeVertex(this, this.nextVertexId++, properties);
+    var n = new algo.core.TreeVertex(this, this.nextVertexId++, properties);
     this.vertices[n.id] = n;
 
     // invoke the createVertex callback to obtain the element for the vertex
@@ -1258,7 +1253,7 @@ algo.graph.BinaryTree.prototype.addVertex = function (properties) {
  * add a value to the tree, just syntactic sugar for addVertex
  * @param value
  */
-algo.graph.BinaryTree.prototype.add = function (value) {
+algo.core.BinaryTree.prototype.add = function (value) {
 
     return this.addVertex({value: value});
 
@@ -1266,7 +1261,7 @@ algo.graph.BinaryTree.prototype.add = function (value) {
 
 // **removeVertex** is overloaded so we can rearrange the topology of the tree as we remove
 // the vertex
-algo.graph.BinaryTree.prototype.removeVertex = function (v) {
+algo.core.BinaryTree.prototype.removeVertex = function (v) {
 
     // number of children is significant, each case 0,1 or 2 are handled slightly differently.
     var childCount = (v.left ? 1 : 0) + (v.right ? 1 : 0);
@@ -1345,7 +1340,7 @@ algo.graph.BinaryTree.prototype.removeVertex = function (v) {
     this.setParents(this.root, null);
 
     // use the progenitor object to remove the vertex and attached edges
-    algo.graph.Graph.prototype.removeVertex.call(this, v);
+    algo.core.Graph.prototype.removeVertex.call(this, v);
 
 };
 
@@ -1353,7 +1348,7 @@ algo.graph.BinaryTree.prototype.removeVertex = function (v) {
  * remove a vertex using its value, syntactic sugar for removeVertex
  * @param value
  */
-algo.graph.BinaryTree.prototype.remove = function (value) {
+algo.core.BinaryTree.prototype.remove = function (value) {
 
     var vertex = this.findVertex(value);
 
@@ -1365,9 +1360,9 @@ algo.graph.BinaryTree.prototype.remove = function (value) {
 /**
  * find the TreeVertex with the given value.
  * @param value
- * @returns {algo.graph.TreeVertex|*|algo.graph.BinaryTree.root}
+ * @returns {algo.core.TreeVertex|*|algo.core.BinaryTree.root}
  */
-algo.graph.BinaryTree.prototype.findVertex = function (value) {
+algo.core.BinaryTree.prototype.findVertex = function (value) {
 
     // start at the root of course
     var current = this.root;
@@ -1398,7 +1393,7 @@ algo.graph.BinaryTree.prototype.findVertex = function (value) {
 // of their parent we don't need to actually examine the value, we just follow the left edges as far
 // as we can.
 
-algo.graph.BinaryTree.prototype.min = function (n) {
+algo.core.BinaryTree.prototype.min = function (n) {
 
     if (n && n.left) {
         return this.min(n.left);
@@ -1409,7 +1404,7 @@ algo.graph.BinaryTree.prototype.min = function (n) {
 
 // return maximum value vertex of the subtree rooted at **n**. The same procedure as **min** but
 // follows the right edges
-algo.graph.BinaryTree.prototype.max = function (n) {
+algo.core.BinaryTree.prototype.max = function (n) {
 
     if (n && n.right) {
         return this.max(n.right);
@@ -1419,10 +1414,10 @@ algo.graph.BinaryTree.prototype.max = function (n) {
 
 // **TreeVertex** extends the **GraphVertex** class and adds getters and setters for .left, .right and .parent
 // that automate the progress
-algo.graph.TreeVertex = function (tree, id, properties) {
+algo.core.TreeVertex = function (tree, id, properties) {
 
     // call progenitor to initialize instance
-    algo.graph.GraphVertex.call(this, id, properties);
+    algo.core.GraphVertex.call(this, id, properties);
 
     // save the tree/graph we belong to so we can add/remove edges
     this.tree = tree;
@@ -1490,7 +1485,7 @@ algo.graph.TreeVertex = function (tree, id, properties) {
 };
 
 // **TreeVertex** extends the **GraphVertex** prototype
-algo.core.extends(algo.graph.GraphVertex, algo.graph.TreeVertex);
+algo.core.extends(algo.core.GraphVertex, algo.core.TreeVertex);
 
 /**
  * A classic heap ( priority queue ) data structure. The heap exists in the graph name space because it uses a binary tree
@@ -1498,7 +1493,7 @@ algo.core.extends(algo.graph.GraphVertex, algo.graph.TreeVertex);
  * @param options
  * @constructor
  */
-algo.graph.Heap = function (options) {
+algo.core.Heap = function (options) {
 
     // save options etc
 
@@ -1511,13 +1506,13 @@ algo.graph.Heap = function (options) {
     this.n = 0;
 };
 
-algo.core.extends(algo.core.DataStructure, algo.graph.Heap);
+algo.core.extends(algo.core.DataStructure, algo.core.Heap);
 
 /**
  * we are empty when n is zero
  * @returns {boolean}
  */
-algo.graph.Heap.isEmpty = function () {
+algo.core.Heap.isEmpty = function () {
 
     return this.n === 0;
 };
@@ -1526,14 +1521,14 @@ algo.graph.Heap.isEmpty = function () {
  * root element in heap is always at this index
  * @const {number}
  */
-algo.graph.Heap.kROOT = 1;
+algo.core.Heap.kROOT = 1;
 
 /**
  * getter for the value property of a heap item identified by index
  * @param i
  * @returns {*}
  */
-algo.graph.Heap.prototype.value = function (i) {
+algo.core.Heap.prototype.value = function (i) {
     return this.nodes[i].value;
 };
 
@@ -1542,7 +1537,7 @@ algo.graph.Heap.prototype.value = function (i) {
  * @param i
  * @returns {*}
  */
-algo.graph.Heap.prototype.payload = function (i) {
+algo.core.Heap.prototype.payload = function (i) {
     return this.nodes[i].payload;
 };
 
@@ -1551,7 +1546,7 @@ algo.graph.Heap.prototype.payload = function (i) {
  * @param i
  * @returns {algo.render.Element}
  */
-algo.graph.Heap.prototype.element = function (i) {
+algo.core.Heap.prototype.element = function (i) {
     return this.nodes[i].element;
 };
 
@@ -1560,7 +1555,7 @@ algo.graph.Heap.prototype.element = function (i) {
  * @param i
  * @param j
  */
-algo.graph.Heap.prototype.swap = function (i, j) {
+algo.core.Heap.prototype.swap = function (i, j) {
 
     var temp = this.nodes[i];
 
@@ -1574,7 +1569,7 @@ algo.graph.Heap.prototype.swap = function (i, j) {
  * @param i
  * @returns {number}
  */
-algo.graph.Heap.prototype.leftChild = function (i) {
+algo.core.Heap.prototype.leftChild = function (i) {
 
     return 2 * i;
 };
@@ -1584,7 +1579,7 @@ algo.graph.Heap.prototype.leftChild = function (i) {
  * @param i
  * @returns {number}
  */
-algo.graph.Heap.prototype.rightChild = function (i) {
+algo.core.Heap.prototype.rightChild = function (i) {
 
     return 2 * i + 1;
 };
@@ -1594,7 +1589,7 @@ algo.graph.Heap.prototype.rightChild = function (i) {
  * @param i
  * @returns {*}
  */
-algo.graph.Heap.prototype.parent = function (i) {
+algo.core.Heap.prototype.parent = function (i) {
 
     return i >> 1;
 };
@@ -1604,16 +1599,16 @@ algo.graph.Heap.prototype.parent = function (i) {
  * @param i
  * @returns {boolean}
  */
-algo.graph.Heap.prototype.isNull = function (i) {
+algo.core.Heap.prototype.isNull = function (i) {
 
-    return i < algo.graph.Heap.kROOT || i > this.n;
+    return i < algo.core.Heap.kROOT || i > this.n;
 };
 
 /**
  * return true if the item is empty
  * @returns {boolean}
  */
-algo.graph.Heap.prototype.isEmpty = function () {
+algo.core.Heap.prototype.isEmpty = function () {
     return this.n === 0;
 };
 
@@ -1621,28 +1616,28 @@ algo.graph.Heap.prototype.isEmpty = function () {
  * add an item to the heap. The value, v should always be a number but the associated payload can be any object
  * @param v
  */
-algo.graph.Heap.prototype.enqueue = function (v, payload) {
+algo.core.Heap.prototype.enqueue = function (v, payload) {
 
     // insert at end of heap then sift upwards toward root until final resting place is found
 
-    this.nodes[algo.graph.Heap.kROOT + this.n] = {
+    this.nodes[algo.core.Heap.kROOT + this.n] = {
         value  : v,
         payload: payload,
         element: this.invoke.call(this, 'createVertex', v, this)
     };
 
-    this.siftUp(algo.graph.Heap.kROOT + this.n++);
+    this.siftUp(algo.core.Heap.kROOT + this.n++);
 };
 
 /**
  * remove an item from the heap, returning a object of the form {value:number, payload: object}
  * @returns {*}
  */
-algo.graph.Heap.prototype.dequeue = function () {
+algo.core.Heap.prototype.dequeue = function () {
 
     // the root is always the min value
 
-    var min = this.nodes[algo.graph.Heap.kROOT];
+    var min = this.nodes[algo.core.Heap.kROOT];
 
     // if there is an element destroy it
     if (min.element) {
@@ -1661,11 +1656,11 @@ algo.graph.Heap.prototype.dequeue = function () {
 
         // get the old last ( right most / deepest ) item
 
-        this.nodes[algo.graph.Heap.kROOT] = this.nodes[algo.graph.Heap.kROOT + this.n];
+        this.nodes[algo.core.Heap.kROOT] = this.nodes[algo.core.Heap.kROOT + this.n];
 
         // sift the root item down until it reaches a leaf or both its children and >= to it
 
-        this.siftDown(algo.graph.Heap.kROOT);
+        this.siftDown(algo.core.Heap.kROOT);
     }
 
     // return the old root of the heap
@@ -1677,7 +1672,7 @@ algo.graph.Heap.prototype.dequeue = function () {
  * move the item at i down the tree until it reaches a suitable resting place.
  * @param i
  */
-algo.graph.Heap.prototype.siftDown = function (i) {
+algo.core.Heap.prototype.siftDown = function (i) {
 
     // if no more children we are done
 
@@ -1731,7 +1726,7 @@ algo.graph.Heap.prototype.siftDown = function (i) {
  * supplied to the constructor or we will just treat our items as intrinsic types and compare with === <= etc.
  * @param i
  */
-algo.graph.Heap.prototype.siftUp = function (i) {
+algo.core.Heap.prototype.siftUp = function (i) {
 
     var v = this.value(i);
 

@@ -56,7 +56,7 @@ algo.layout.Strategy.prototype.update = function () {
 
 /**
  * the simplest of the graph layout strategies. Arranges graph vertices around the circumference of an ellipse.
- * @param {algo.graph.Graph} dataStructure
+ * @param {algo.core.Graph} dataStructure
  * @constructor
  */
 algo.layout.GraphCircular = function (dataStructure) {
@@ -110,7 +110,7 @@ algo.layout.GraphCircular.prototype.update = function (box) {
 
 /**
  * The binary tree layout strategy. s
- * @param {algo.graph.BinaryTree} dataStructure
+ * @param {algo.core.BinaryTree} dataStructure
  * @constructor
  */
 algo.layout.BinaryTree = function (dataStructure) {
@@ -202,7 +202,7 @@ algo.layout.BinaryTree.prototype.update = function (box) {
 
 /**
  * The force directed graph layout strategy.
- * @param {algo.graph.Graph} dataStructure
+ * @param {algo.core.Graph} dataStructure
  * @constructor
  */
 algo.layout.GraphForceDirected = function (dataStructure, options) {
@@ -1505,7 +1505,7 @@ algo.layout.GridLayout.prototype.debugShow = function () {
 
 /**
  * The binary tree layout strategy for heaps. s
- * @param {algo.graph.BinaryTree} dataStructure
+ * @param {algo.core.BinaryTree} dataStructure
  * @constructor
  */
 algo.layout.HeapTree = function (dataStructure) {
@@ -1567,7 +1567,7 @@ algo.layout.HeapTree.prototype.update = function (box) {
 
     // traverse from root, depth 1
     // TODO: Figure out why I have to use call here to preserve the scope???
-    traverseLayout.call(this, algo.graph.Heap.kROOT, 0);
+    traverseLayout.call(this, algo.core.Heap.kROOT, 0);
 
     // create a grid layout using the calculate rows and columns required
     var grid = new algo.layout.GridLayout(box, maxDepth + 1, x);
@@ -1578,7 +1578,7 @@ algo.layout.HeapTree.prototype.update = function (box) {
     var newEdgeMap = {};
 
     // use a stack to recur into the structure rather than a recursive function.
-    var stack = [algo.graph.Heap.kROOT];
+    var stack = [algo.core.Heap.kROOT];
 
     while (stack.length) {
 
@@ -1639,7 +1639,7 @@ algo.layout.HeapTree.prototype.update = function (box) {
 /**
  * The directed graph layout strategy is implemented using the dagre js library
  * https://github.com/cpettitt/dagre
- * @param {algo.graph.Graph} dataStructure
+ * @param {algo.core.Graph} dataStructure
  * @constructor
  */
 algo.layout.GraphDirected = function (dataStructure, options) {
