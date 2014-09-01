@@ -57,6 +57,7 @@ self.onmessage = function (event) {
     }
 };
 
+
 /**
  * the application class that runs in this worker
  * @constructor
@@ -103,6 +104,7 @@ var WorkerApp = function (worker, algorithmURI, api) {
 
     this.surface = new algo.render.Surface({
 
+        // TODO, this size must match algo.Player.kSW, kSH in player.js, find a good way to do that
         location: algo.render.Surface.WORKER,
         bounds  : new algo.layout.Box(0, 0, 900, 556)
 
@@ -112,15 +114,23 @@ var WorkerApp = function (worker, algorithmURI, api) {
 
     importScripts(algorithmURI);
 
-    // send acknowledgement that we are initialized and supply algorithm information
+    // create the users algorithm as a generator and start running it
+
+    try {
+
+        this.userAlgorithm = algorithm();
+
+    } catch (error) {
+
+        this.postError(error);
+        return;
+    }
+
+    // send acknowledgement that we are initialized
 
     this.worker.postMessage({
         "name": "M_Initialize_ACK"
     });
-
-    // create the users algorithm as a generator and start running it
-
-    this.userAlgorithm = algorithm();
 
     // call continue to start the algorithm
 
@@ -144,16 +154,8 @@ WorkerApp.prototype.continue = function () {
 
     } catch (error) {
 
-        this.worker.postMessage({
+        this.postError(error);
 
-            name          : 'M_Exception',
-            message       : error.message,
-            stack         : error.stack
-        });
-
-        this.done();
-
-        return;
     }
 
     // send results of yield to the DOM side or signal the algorithm is complete
@@ -164,6 +166,22 @@ WorkerApp.prototype.continue = function () {
         this.pause(y.value);
     }
 };
+
+/**
+ * post the exception to the main thread. The worker is usually terminated on exceptions so we don't need to do anything
+ * else.
+ * @param error
+ */
+WorkerApp.prototype.postError = function(error) {
+
+    this.worker.postMessage({
+
+        name          : 'M_Exception',
+        message       : error.message,
+        stack         : error.stack
+    });
+
+}
 
 /**
  * called whenever the algorithm yields

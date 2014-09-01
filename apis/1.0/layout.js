@@ -960,7 +960,7 @@ algo.layout.Line.prototype.intersectWithLine = function (other) {
 /**
  * intersect the line with a Box. This can result in 0,1,2 points of intersection.
  * @param box - any rectangle like object
- * @returns {Intersection}
+ * @returns {algo.layout.Intersection}
  */
 algo.layout.Line.prototype.intersectWithBox = function (box) {
 

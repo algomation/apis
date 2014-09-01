@@ -60,6 +60,14 @@ algo.render.Element = function (_options) {
         options.state = algo.render.kS_NORMAL;
     }
 
+    // default x/y to zero UNLESS they are already set ( including via a shape )
+    if (!options.x && !options.shape) {
+        options.x = 0;
+    }
+    if (!options.y && !options.shape) {
+        options.y = 0;
+    }
+
     // create our ID and add to static map of elements
     this.id = 'algoid-' + algo.render.Element.nextID++;
     algo.render.Element.map[this.id] = this;
@@ -167,7 +175,7 @@ algo.render.Element.prefixed = function (propertyName) {
                 .call(styles)
                 .join('')
                 .match(/-(moz|webkit|ms)-/) || (styles.OLink === '' && ['', 'o'])
-            )[1],
+                )[1],
             dom = ('WebKit|Moz|MS|O').match(new RegExp('(' + pre + ')', 'i'))[1];
 
         algo.render.Element.browserPrefix = {
@@ -592,10 +600,11 @@ algo.render.Element.prototype.updateDOM = function () {
 
     tprop['text-align'] = this.getInheritedValue('textAlign', 'center');
 
-    // x/y (floored to integers) are applied to the css transform as is rotation and scaling
+    // basic position, scaling and rotation use inherited values except for x/y which must be set on each
+    // element that uses them.
 
-    var x = this.getInheritedValue('x', 0),
-        y = this.getInheritedValue('y', 0),
+    var x = this.x,
+        y = this.y,
         sx = this.getInheritedValue('scaleX', 1),
         sy = this.getInheritedValue('scaleY', 1),
         r = this.getInheritedValue('rotation', 0);
@@ -605,8 +614,8 @@ algo.render.Element.prototype.updateDOM = function () {
     var transform = algo.render.Element.prefixed('transform');
 
     prop[transform] = 'translate3d(' + x + 'px,' + y + 'px' + ',0) ' +
-    'rotate(' + r + 'deg) ' +
-    'scale(' + sx + ',' + sy + ')';
+        'rotate(' + r + 'deg) ' +
+        'scale(' + sx + ',' + sy + ')';
 
     // apply to element and text element
 
@@ -904,6 +913,7 @@ algo.render.Rectangle.prototype.getBounds = function () {
 /**
  * A rectangle with center text and optional text at top right. It is useful for displaying strings for example where
  * you want to display both the character and the index at each location.
+ * @constructor
  */
 algo.render.LetterTile = function (_options) {
 
@@ -922,7 +932,6 @@ algo.render.LetterTile = function (_options) {
 
 };
 
-// **LetterTile** object inherits from **Rectangle** object
 algo.core.extends(algo.render.Rectangle, algo.render.LetterTile);
 
 /**
@@ -975,7 +984,11 @@ algo.render.LetterTile.prototype.set = function (options, _depth) {
     }
 };
 
-// **Circle** object constructor
+/**
+ * circle class, positioned via center
+ * @param _options
+ * @constructor
+ */
 algo.render.Circle = function (_options) {
 
     // options object gets modified so pass along a clone so we don't change the users object
@@ -1038,8 +1051,8 @@ algo.render.Circle.prototype.updateDOM = function () {
 
     // then this instance
 
-    var x = this.getInheritedValue('x', 0),
-        y = this.getInheritedValue('y', 0),
+    var x = this.x,
+        y = this.y,
         sx = this.getInheritedValue('scaleX', 1),
         sy = this.getInheritedValue('scaleY', 1),
         r = this.getInheritedValue('rotation', 0),
