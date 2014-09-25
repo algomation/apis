@@ -50,7 +50,8 @@ algo.render.Element = function (_options) {
     var options = _.defaults(_.clone(_options || {}), {
         type       : 'Element',
         strokeWidth: 1,
-        fontSize   : '40px'
+        fontSize   : '40px',
+        rotation   : 0
     });
 
     // All elements will use the state:algo.render.kS_NORMAL ** UNLESS they specify another state or any of the
