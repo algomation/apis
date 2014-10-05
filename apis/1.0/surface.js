@@ -50,11 +50,6 @@ algo.render.Surface = function (options) {
     // setup singleton. There is only ever one surface so this is the best way to access it
     algo.SURFACE = this;
 
-    // call reset on element class to ensure element ID's will match on this side
-    // and the DOM side of the surface
-
-    algo.render.Element.resetClass();
-
     // the options tell us if we are the worker or the dom version of the library
 
     this.options = options;
@@ -71,8 +66,6 @@ algo.render.Surface = function (options) {
 
         this.commandHandlers = {};
 
-        //this.commandHandlers[algo.render.Surface.CREATE_COMMAND] = this.handleCreateCommand;
-
         this.commandHandlers[algo.render.Surface.UPDATE_COMMAND] = this.handleUpdateCommand;
 
         this.commandHandlers[algo.render.Surface.DESTROY_COMMAND] = this.handleDestroyCommand;
@@ -83,6 +76,10 @@ algo.render.Surface = function (options) {
         // create a queue of commands that will be passed to our DOM twin
 
         this.commands = [];
+
+        // ensure element class is reset
+
+        algo.render.Element.resetClass();
 
         // surface has a single element that acts as the root of the scene graph. We only create this for the worker
         // since its will be created on the DOM when the first commands are sent over.
@@ -100,7 +97,89 @@ algo.render.Surface = function (options) {
         // provide the bounds of the root element as a global
 
         algo.BOUNDS = this.root.getBounds();
+
     }
+};
+
+/**
+ * make the root element of the surface, assign ROOT and BOUNDS globals
+ */
+algo.render.Surface.prototype.empty = function () {
+
+    // clear the surface and reset of our root, the first replay command
+    // will construct the root element
+
+    if (this.root && this.root.dom) {
+        this.root.dom.remove();
+    }
+
+    delete this.root;
+
+    // surface has a single element that acts as the root of the scene graph. We only create this for the worker
+    // since its will be created on the DOM when the first commands are sent over.
+    //
+    //this.root = algo.ROOT = new algo.render.Rectangle({
+    //    root       : true,
+    //    visible    : false,
+    //    x          : 0,
+    //    y          : 0,
+    //    w          : algo.Player.kSW,
+    //    h          : algo.Player.kSH,
+    //    strokeWidth: 0
+    //});
+    //
+    //// provide the bounds of the root element as a global
+    //
+    //algo.BOUNDS = this.root.getBounds();
+};
+
+
+
+/**
+ * save and detach the current surface and return a new, temporary surface
+ */
+algo.render.Surface.enterHistoryMode = function () {
+
+    if (algo.render.Surface.history) {
+        throw new Error("Surface history already exists");
+    }
+
+    // save current singleton
+    algo.render.Surface.history = algo.SURFACE;
+
+    // detach the current root dom, the temp surface will replace it
+    algo.SURFACE.root.dom.detach();
+
+    // create new surface with options from old surface
+    new algo.render.Surface(algo.SURFACE.options);
+
+    // mark current frame as nothing
+    algo.SURFACE.historyFrame = -1;
+};
+
+/**
+ * exit history mode and restore old surface
+ */
+algo.render.Surface.exitHistoryMode = function () {
+
+    if (!algo.render.Surface.history) {
+        throw new Error("Surface class is not in history mode");
+    }
+
+    // empty container dom if there is any ( might have rewound to start of algorithm )
+    if (algo.SURFACE.root && algo.SURFACE.root.dom) {
+        algo.SURFACE.root.dom.remove();
+    }
+
+    // reset singleton back to the original surface
+    algo.SURFACE = algo.render.Surface.history;
+
+    // reattach old surface DOM
+    algo.SURFACE.root.dom.appendTo(algo.SURFACE.dom);
+
+    // delete history
+    delete algo.render.Surface.history;
+
 };
 
 /**
@@ -131,24 +210,10 @@ algo.render.Surface.DOM = 'dom';
  * these constants define all the commands that the worker may send to the DOM
  * @type {string}
  */
-//algo.render.Surface.CREATE_COMMAND = 'createElement';
 
 algo.render.Surface.UPDATE_COMMAND = 'updateElement';
 
 algo.render.Surface.DESTROY_COMMAND = 'destroyElement';
-
-/**
- * when an element is created
- * @param element
- * @param options
- */
-//algo.render.Surface.prototype.elementCreated = function (element, options) {
-//
-//    // generate a create command if we are the worker
-//
-//    this.addCommand(algo.render.Surface.CREATE_COMMAND, element, options);
-//
-//};
 
 /**
  * when an element is destoryed
@@ -162,7 +227,6 @@ algo.render.Surface.prototype.elementDestroyed = function (element) {
     this.addCommand(algo.render.Surface.DESTROY_COMMAND, element, {});
 
 };
-
 
 /**
  * when an elements properties are updated
@@ -193,11 +257,12 @@ algo.render.Surface.prototype.addCommand = function (name, element, options) {
 
     // omit certain properties that don't need to get transmitted e.g. the array of states that each element has.
     // We also don't transmit the state property since it works by applying properties that will generate their own
-    // commands
+    // commands. Finally we don't transmit the shape property since, if it applies to the element, it will have
+    // been realized in other properties ,
 
     // ( this also clones the options object )
 
-    var c = _.omit(options, 'states', 'state');
+    var c = _.omit(options, 'states', 'state', 'shape');
 
     // replace parent element with parent id, otherwise the entire parent chain would get serialized
 
@@ -249,6 +314,7 @@ algo.render.Surface.prototype.flushCommands = function () {
     return buffer;
 };
 
+
 /**
  * execute commands from the worker on the dom
  */
@@ -258,22 +324,15 @@ algo.render.Surface.prototype.executeCommands = function (commands) {
 
     _.each(commands, function (command) {
 
-//        console.log("EX:" + command.name + " FOR:" + (command['options'] ? command.options.id : '---'));
-//
-//        console.log("OP:" + JSON.stringify(command.options, null, 4));
-
         // fix up some properties that were proxied in this.addCommand on the worker side
-
         var params = command.options;
 
         // replace parent ID with the real parent
-
         if (params.parent) {
             params.parent = algo.render.Element.findElement(params.parent);
         }
 
         // execute the command
-
         this.commandHandlers[command.name].call(this, command.options);
 
     }, this);
@@ -287,30 +346,106 @@ algo.render.Surface.prototype.executeCommands = function (commands) {
     this.validate();
 };
 
-///**
-// * create element command handler
-// * @param options
-// */
-//algo.render.Surface.prototype.handleCreateCommand = function (options) {
-//
-//    // invoke the constructor for class using the name of the class
-//
-//    var e = new algo.render[options.type](options);
-//
-//    // if this was the root element assign it
-//
-//    if (options.root) {
-//        this.root = algo.ROOT = e;
-//    }
-//
-//    // the id of the new element will match the supplied ID if DOM/Worker are in sync
-//
-//    if (e.id !== options.id) {
-//        throw new Error("Element ID mismatch");
-//    }
-//};
+/**
+ * execute multiple sets of render command and only update when all have been executed.
+ * @param commandsHistory
+ */
+algo.render.Surface.prototype.executeCommandHistory = function(commandsHistory, frameIndex) {
+
+    // if going forward in time we can play from present, otherwise, if going backwards
+    // we have to play from beginning
+
+    if (this.historyFrame === -1 || frameIndex < this.historyFrame) {
+
+        this.resetElements();
+
+        this.playHistory(commandsHistory, 0, frameIndex);
+
+    } else {
+
+        this.playHistory(commandsHistory, this.historyFrame, frameIndex);
+    }
+
+    this.historyFrame = frameIndex;
+};
+
+/**
+ * before jumping to a new frame of the history the current surface must be cleared and the element class
+ * reset ( ONLY if going backwards )
+ */
+algo.render.Surface.prototype.resetElements = function () {
+
+    // clear the surface, reset element class
+
+    algo.render.Element.resetClass();
+
+    this.empty();
+
+};
+
+/**
+ * play the given sub-section of the history buffer
+ * @param commandsHistory
+ * @param start
+ * @param end
+ */
+algo.render.Surface.prototype.playHistory = function(commandsHistory, start, end) {
 
 
+    for(var i = start; i < end; i += 1) {
+
+        var commands = commandsHistory[i];
+
+        for(var j = 0; j < commands.renderCommands.length; j += 1) {
+
+            var command = commands.renderCommands[j];
+
+            var params = command.options;
+
+            // replace parent ID with the real parent
+            if (params.parent) {
+                params.parent = algo.render.Element.findElement(params.parent);
+            }
+
+            // execute the command
+            this.commandHandlers[command.name].call(this, params);
+
+            // replace parent with the parent ID
+            if (params.parent) {
+                params.parent = params.parent.id;
+            }
+        }
+    }
+
+    // update the dom
+
+    this.update();
+
+    // validate
+
+    this.validate();
+};
+
+/**
+ * undo the prep work done in executeCommands, restore parent property to parent id
+ * @param commands
+ */
+algo.render.Surface.prototype.restoreParentIds = function(commands) {
+
+    // iterate all commands in the buffer
+
+    _.each(commands, function (command) {
+
+        var params = command.options;
+
+        // replace parent element with parent id
+
+        if (params.parent) {
+            params.parent = params.parent.id;
+        }
+
+    }, this);
+};
 
 /**
  * update element command handler
@@ -318,7 +453,7 @@ algo.render.Surface.prototype.executeCommands = function (commands) {
  */
 algo.render.Surface.prototype.handleUpdateCommand = function (options) {
 
-    // if this is new element we need to construct it
+    // if this is new element we need to construct it then apply options
 
     var e = algo.render.Element.findElement(options.id);
 
@@ -331,18 +466,12 @@ algo.render.Surface.prototype.handleUpdateCommand = function (options) {
         if (options.root) {
             this.root = algo.ROOT = e;
         }
-
-        // the id of the new element will match the supplied ID if DOM/Worker are in sync
-        if (e.id !== options.id) {
-            throw new Error("Element ID mismatch");
-        }
     }
 
     // apply properties in the command
     e.set(options);
 
 };
-
 
 /**
  * If the options object contains any non empty arrays then return a clone
@@ -353,7 +482,7 @@ algo.render.Surface.prototype.handleUpdateCommand = function (options) {
 algo.render.Surface.prototype.processOptions = function (options) {
 
     // reset more flag in options,
-    options.more = false;
+    delete options.more;
 
     // create empty clone
     var clone = {};
@@ -389,27 +518,25 @@ algo.render.Surface.prototype.processOptions = function (options) {
  */
 algo.render.Surface.prototype.handleDestroyCommand = function (options) {
 
-    // get the element
+    // get the element and destroy it
 
     algo.render.Element.findElement(options.id).destroy();
 
 };
-
 
 /**
  * update the surface and all layers and all elements on those layers
  */
 algo.render.Surface.prototype.update = function () {
 
-    // call update on the root element which recursively calls children
+    // call update on the root element which recursively calls children. Root may not
+    // exist if we back track through history to the beginning
 
-    this.root.update();
-
-    // if the dom was just created then append to surface dom
-
-    if (this.root.dom.parent().length === 0) {
-
-        this.root.dom.appendTo(this.dom);
+    if (this.root) {
+        this.root.update();
+        if (this.root.dom.parent().length === 0) {
+            this.root.dom.appendTo(this.dom);
+        }
     }
 };
 
@@ -418,8 +545,16 @@ algo.render.Surface.prototype.update = function () {
  */
 algo.render.Surface.prototype.validate = function () {
 
+
     // validate on DOM side only, but not in production
+
     if (this.isDOM && !algo.G.live) {
+
+        // bail if nothing to validate
+
+        if (!this.root || !this.root.element) {
+            return;
+        }
 
         // match elements on the surface / root element to those in the static element map
 

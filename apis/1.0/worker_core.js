@@ -181,7 +181,7 @@ WorkerApp.prototype.postError = function(error) {
         stack         : error.stack
     });
 
-}
+};
 
 /**
  * called whenever the algorithm yields

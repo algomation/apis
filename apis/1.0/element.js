@@ -70,6 +70,7 @@ algo.render.Element = function (_options) {
     }
 
     // create our ID and add to static map of elements
+
     this.id = 'algoid-' + algo.render.Element.nextID++;
     algo.render.Element.map[this.id] = this;
 
@@ -116,6 +117,7 @@ algo.render.Element = function (_options) {
     // apply options to elements
     this.set(options);
 };
+
 /* The following are constants for use with the 'state' property of elements */
 /**
  * @const The normal display state
@@ -176,7 +178,7 @@ algo.render.Element.prefixed = function (propertyName) {
                 .call(styles)
                 .join('')
                 .match(/-(moz|webkit|ms)-/) || (styles.OLink === '' && ['', 'o'])
-                )[1],
+            )[1],
             dom = ('WebKit|Moz|MS|O').match(new RegExp('(' + pre + ')', 'i'))[1];
 
         algo.render.Element.browserPrefix = {
@@ -258,6 +260,38 @@ algo.render.Element.resetClass = function () {
 };
 
 /**
+ * start history mode which basically means remember currently allocated elements and reset
+ */
+algo.render.Element.enterHistoryMode = function () {
+
+    if (algo.render.Element.history) {
+        throw new Error("Element class is already in history mode");
+    }
+
+    algo.render.Element.history = {
+        nextID: algo.render.Element.nextID,
+        map   : algo.render.Element.map
+    };
+
+    algo.render.Element.resetClass();
+};
+
+/**
+ * exit history mode
+ */
+algo.render.Element.exitHistoryMode = function () {
+
+    if (!algo.render.Element.history) {
+        throw new Error("Element class was not in history mode");
+    }
+
+    algo.render.Element.nextID = algo.render.Element.history.nextID;
+    algo.render.Element.map = algo.render.Element.history.map;
+
+    delete algo.render.Element.history;
+};
+
+/**
  * find an element by its id
  * @param id
  */
@@ -307,6 +341,23 @@ algo.render.Element.prototype.get = function (properties) {
 
     return p;
 
+};
+
+/**
+ * return the current values of the options given. This is used to cache them in the surfaces frame history
+ * @param options
+ */
+algo.render.Element.prototype.getSetChanges = function (options) {
+
+    var changes = {};
+
+    _.each(_.keys(options), function (key) {
+
+        changes[key] = this[key];
+
+    }, this);
+
+    return changes;
 };
 
 /**
@@ -516,17 +567,26 @@ algo.render.Element.prototype.getCSSColor = function (obj) {
 
 /**
  * each element is assigned a unique ID upon construction. This ID is used as an attribute within the element
- * to make finding the element in the DOM easier
- * @type {number}
+ * to make finding the element in the DOM easier.
  */
 algo.render.Element.nextID = 0;
+
+/**
+ * if true then new elements get the fade in keyframe animation. During history update the fade in effect is
+ * unattractive since you are skipping between frames quickly
+ * @type {boolean}
+ */
+algo.render.Element.fadeIn = true;
 
 /**
  * create the DOM element for this instance. The base class is simply an absolutely positioned div
  */
 algo.render.Element.prototype.createDOM = function () {
 
-    this.dom = $('<div class="algo-element algo-transition algo-element-fadein"><div class="algo-element-text algo-transition"></div></div>');
+    var s = _.sprintf('<div class="algo-element algo-transition %s"><div class="algo-element-text algo-transition"></div></div>',
+        algo.render.Element.fadeIn ? "algo-element-fadein" : "");
+
+    this.dom = $(s);
 
     // add our ID as an attribute
 
@@ -615,8 +675,8 @@ algo.render.Element.prototype.updateDOM = function () {
     var transform = algo.render.Element.prefixed('transform');
 
     prop[transform] = 'translate3d(' + x + 'px,' + y + 'px' + ',0) ' +
-        'rotate(' + r + 'deg) ' +
-        'scale(' + sx + ',' + sy + ')';
+    'rotate(' + r + 'deg) ' +
+    'scale(' + sx + ',' + sy + ')';
 
     // apply to element and text element
 
@@ -868,18 +928,21 @@ algo.render.Rectangle.prototype.layout = function (box) {
 algo.render.Rectangle.prototype.fromShape = function (shape) {
 
     if (algo.core.isCircleLike(shape)) {
-        this.x = shape.x - shape.radius;
-        this.y = shape.y - shape.radius;
-        this.w = shape.radius * 2;
-        this.h = shape.radius * 2;
+        //this.x = shape.x - shape.radius;
+        //this.y = shape.y - shape.radius;
+        //this.w = shape.radius * 2;
+        //this.h = shape.radius * 2;
+        this.set({x: shape.x - shape.radius, y: shape.y - shape.radius, w: shape.radius * 2, h: shape.radius * 2});
     } else if (algo.core.isRectLike(shape)) {
-        this.x = shape.x;
-        this.y = shape.y;
-        this.w = shape.w;
-        this.h = shape.h;
+        //this.x = shape.x;
+        //this.y = shape.y;
+        //this.w = shape.w;
+        //this.h = shape.h;
+        this.set({x: shape.x, y: shape.y, w: shape.w, h: shape.h});
     } else if (algo.core.isPointLike(shape)) {
-        this.x = shape.x - this.w / 2;
-        this.y = shape.y - this.h / 2;
+        //this.x = shape.x - this.w / 2;
+        //this.y = shape.y - this.h / 2;
+        this.set({x: shape.x - this.w / 2, y: shape.y - this.h / 2});
     } else {
         throw new Error("algo.render.Rectangle.fromShape called with unrecognized shape");
     }
@@ -1023,16 +1086,30 @@ algo.core.extends(algo.render.Element, algo.render.Circle);
 algo.render.Circle.prototype.fromShape = function (shape) {
 
     if (algo.core.isCircleLike(shape)) {
-        this.x = shape.x;
-        this.y = shape.y;
-        this.radius = shape.radius;
+        //this.x = shape.x;
+        //this.y = shape.y;
+        //this.radius = shape.radius;
+        this.set({
+            x: shape.x,
+            y: shape.y,
+            radius: shape.radius
+        });
     } else if (algo.core.isRectLike(shape)) {
-        this.x = shape.x + shape.w / 2;
-        this.y = shape.y + shape.h / 2;
-        this.radius = Math.min(shape.w, shape.h) / 2;
+        //this.x = shape.x + shape.w / 2;
+        //this.y = shape.y + shape.h / 2;
+        //this.radius = Math.min(shape.w, shape.h) / 2;
+        this.set({
+            x: shape.x + shape.w / 2,
+            y: shape.y + shape.h / 2,
+            radius: Math.min(shape.w, shape.h) / 2
+        });
     } else if (algo.core.isPointLike(shape)) {
-        this.x = shape.x;
-        this.y = shape.y;
+        //this.x = shape.x;
+        //this.y = shape.y;
+        this.set({
+            x: shape.x,
+            y: shape.y
+        });
     } else {
         throw new Error("algo.render.Circle.fromShape called with unrecognized shape");
     }
@@ -1280,6 +1357,7 @@ algo.render.Line.prototype.updateDOM = function () {
     prop.transform = transform;
 
     this.dom.css(prop);
+
 };
 
 /**
@@ -1307,10 +1385,17 @@ algo.render.Line.prototype.fromShape = function (shape) {
         throw new Error("Not line like shape in algo.render.Line::fromShape");
     }
 
-    this.x1 = shape.x1;
-    this.y1 = shape.y1;
-    this.x2 = shape.x2;
-    this.y2 = shape.y2;
+    //this.x1 = shape.x1;
+    //this.y1 = shape.y1;
+    //this.x2 = shape.x2;
+    //this.y2 = shape.y2;
+
+    this.set({
+        x1: shape.x1,
+        y1: shape.y1,
+        x2: shape.x2,
+        y2: shape.y2
+    });
 
 };
 
@@ -1503,7 +1588,7 @@ algo.render.ElementGroup.prototype.destroy = function () {
  * @param end
  * @constructor
  */
-algo.render.LinearGradient = function(angle, start, end) {
+algo.render.LinearGradient = function (angle, start, end) {
 
     this.angle = angle;
     this.start = start;
