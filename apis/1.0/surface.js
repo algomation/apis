@@ -70,6 +70,30 @@ algo.render.Surface = function (options) {
 
         this.commandHandlers[algo.render.Surface.DESTROY_COMMAND] = this.handleDestroyCommand;
 
+        $('.algo-surface').bind('mousemove', _.bind(function (e) {
+
+            if (!algo.G.live && algo.ROOT && algo.ROOT.dom) {
+
+                if (!this.mpDIV) {
+                    this.mpDIV = $('<div></div>');
+                    this.mpDIV.css({
+                        position  : 'absolute',
+                        width     : '5em',
+                        height    : '1.5em',
+                        //left      : '1em',
+                        //top       : '1em',
+                        color     : 'white',
+                        background: 'red'
+                    });
+                    this.mpDIV.appendTo('.algo-surface');
+                }
+
+                var offset = algo.ROOT.dom.offset();
+                this.mpDIV.html(_.sprintf("%d, %d", (e.pageX - offset.left) * (1 / this.scaling) >> 0,(e.pageY - offset.top) * (1 / this.scaling) >> 0));
+
+            }
+
+        }, this));
 
     } else {
 
@@ -132,8 +156,6 @@ algo.render.Surface.prototype.empty = function () {
     //
     //algo.BOUNDS = this.root.getBounds();
 };
-
-
 
 /**
  * save and detach the current surface and return a new, temporary surface
@@ -314,7 +336,6 @@ algo.render.Surface.prototype.flushCommands = function () {
     return buffer;
 };
 
-
 /**
  * execute commands from the worker on the dom
  */
@@ -350,7 +371,7 @@ algo.render.Surface.prototype.executeCommands = function (commands) {
  * execute multiple sets of render command and only update when all have been executed.
  * @param commandsHistory
  */
-algo.render.Surface.prototype.executeCommandHistory = function(commandsHistory, frameIndex) {
+algo.render.Surface.prototype.executeCommandHistory = function (commandsHistory, frameIndex) {
 
     // if going forward in time we can play from present, otherwise, if going backwards
     // we have to play from beginning
@@ -389,14 +410,13 @@ algo.render.Surface.prototype.resetElements = function () {
  * @param start
  * @param end
  */
-algo.render.Surface.prototype.playHistory = function(commandsHistory, start, end) {
+algo.render.Surface.prototype.playHistory = function (commandsHistory, start, end) {
 
-
-    for(var i = start; i < end; i += 1) {
+    for (var i = start; i < end; i += 1) {
 
         var commands = commandsHistory[i];
 
-        for(var j = 0; j < commands.renderCommands.length; j += 1) {
+        for (var j = 0; j < commands.renderCommands.length; j += 1) {
 
             var command = commands.renderCommands[j];
 
@@ -430,7 +450,7 @@ algo.render.Surface.prototype.playHistory = function(commandsHistory, start, end
  * undo the prep work done in executeCommands, restore parent property to parent id
  * @param commands
  */
-algo.render.Surface.prototype.restoreParentIds = function(commands) {
+algo.render.Surface.prototype.restoreParentIds = function (commands) {
 
     // iterate all commands in the buffer
 

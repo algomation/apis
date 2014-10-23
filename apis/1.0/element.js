@@ -324,6 +324,19 @@ algo.render.Element.prototype.getInheritedValue = function (key, defaultValue) {
 };
 
 /**
+ * get the value for the given property from the object if set otherwise return the default value
+ * @param key
+ */
+algo.render.Element.prototype.getOwnValue = function (key, defaultValue) {
+
+    if (this.hasOwnProperty(key)) {
+        return this[key];
+    }
+
+    return defaultValue;
+};
+
+/**
  * shallow clone the properties from the object, using inheritance to fill values if not present on the object.
  * Values that are not present will be left untouched and therefore can be pre-filled with defaults.
  * @param properties
@@ -343,22 +356,6 @@ algo.render.Element.prototype.get = function (properties) {
 
 };
 
-/**
- * return the current values of the options given. This is used to cache them in the surfaces frame history
- * @param options
- */
-algo.render.Element.prototype.getSetChanges = function (options) {
-
-    var changes = {};
-
-    _.each(_.keys(options), function (key) {
-
-        changes[key] = this[key];
-
-    }, this);
-
-    return changes;
-};
 
 /**
  * apply all the properties in options. child class should overload by but call the base class to ensure
@@ -628,14 +625,7 @@ algo.render.Element.prototype.updateDOM = function () {
 
     var sw = this.getInheritedValue('strokeWidth', 0);
 
-    if (sw) {
-
-        prop.border = sw + 'px solid ' + this.getCSSColor(this.getInheritedValue('stroke', 'transparent'));
-
-    } else {
-
-        prop.border = 'none';
-    }
+    prop.border = sw + 'px solid ' + this.getCSSColor(this.getInheritedValue('stroke', 'transparent'));
 
     // opacity
 
@@ -647,7 +637,7 @@ algo.render.Element.prototype.updateDOM = function () {
 
     // z is converted to z-index
 
-    prop['z-index'] = this.getInheritedValue('z', 0);
+    prop['z-index'] = this.getOwnValue('z', 0);
 
     // pen color is applied to text
 
@@ -666,17 +656,15 @@ algo.render.Element.prototype.updateDOM = function () {
 
     var x = this.x,
         y = this.y,
-        sx = this.getInheritedValue('scaleX', 1),
-        sy = this.getInheritedValue('scaleY', 1),
-        r = this.getInheritedValue('rotation', 0);
+        sx = this.getOwnValue('scaleX', 1),
+        sy = this.getOwnValue('scaleY', 1),
+        r = this.getOwnValue('rotation', 0);
 
     // property name must be prefixed
 
     var transform = algo.render.Element.prefixed('transform');
 
-    prop[transform] = 'translate3d(' + x + 'px,' + y + 'px' + ',0) ' +
-    'rotate(' + r + 'deg) ' +
-    'scale(' + sx + ',' + sy + ')';
+    prop[transform] = _.sprintf('translate3d(%.0fpx, %.0fpx, 0) rotate(%.2fdeg) scale(%.2f, %.2f)', x, y, r, sx, sy);
 
     // apply to element and text element
 
@@ -895,13 +883,24 @@ algo.render.Rectangle.prototype.updateDOM = function () {
         h = this.getInheritedValue('h', 0) >> 0,
         cr = this.getInheritedValue('cornerRadius', 0);
 
+
     // then this instance
 
     var prop = {
-        width          : w,
-        height         : h,
-        'border-radius': cr
+        width          : w + 'px',
+        height         : h + 'px',
+        'border-radius': cr + 'px'
     };
+
+    // NOTE: There is a problem with scaled rectangles with a 1px stroke. One or more borders may randomly
+    // disappear as the element is scaled since border widths are scaled as well.
+    // There are no good fixes for this problem ( how do you draw a line that is 0.5 of a pixel thick? ) but
+    // you can fake it by setting a corner radius of at least 1px! This forces the browser to anti-alias the border
+    // as a curve so helping to make the border re-appear
+
+    if (this.strokeWidth === 1 && cr === 0) {
+        prop['border-radius'] = '1px'
+    }
 
     this.dom.css(prop);
 
@@ -928,20 +927,10 @@ algo.render.Rectangle.prototype.layout = function (box) {
 algo.render.Rectangle.prototype.fromShape = function (shape) {
 
     if (algo.core.isCircleLike(shape)) {
-        //this.x = shape.x - shape.radius;
-        //this.y = shape.y - shape.radius;
-        //this.w = shape.radius * 2;
-        //this.h = shape.radius * 2;
         this.set({x: shape.x - shape.radius, y: shape.y - shape.radius, w: shape.radius * 2, h: shape.radius * 2});
     } else if (algo.core.isRectLike(shape)) {
-        //this.x = shape.x;
-        //this.y = shape.y;
-        //this.w = shape.w;
-        //this.h = shape.h;
         this.set({x: shape.x, y: shape.y, w: shape.w, h: shape.h});
     } else if (algo.core.isPointLike(shape)) {
-        //this.x = shape.x - this.w / 2;
-        //this.y = shape.y - this.h / 2;
         this.set({x: shape.x - this.w / 2, y: shape.y - this.h / 2});
     } else {
         throw new Error("algo.render.Rectangle.fromShape called with unrecognized shape");
@@ -1086,26 +1075,18 @@ algo.core.extends(algo.render.Element, algo.render.Circle);
 algo.render.Circle.prototype.fromShape = function (shape) {
 
     if (algo.core.isCircleLike(shape)) {
-        //this.x = shape.x;
-        //this.y = shape.y;
-        //this.radius = shape.radius;
         this.set({
             x: shape.x,
             y: shape.y,
             radius: shape.radius
         });
     } else if (algo.core.isRectLike(shape)) {
-        //this.x = shape.x + shape.w / 2;
-        //this.y = shape.y + shape.h / 2;
-        //this.radius = Math.min(shape.w, shape.h) / 2;
         this.set({
             x: shape.x + shape.w / 2,
             y: shape.y + shape.h / 2,
             radius: Math.min(shape.w, shape.h) / 2
         });
     } else if (algo.core.isPointLike(shape)) {
-        //this.x = shape.x;
-        //this.y = shape.y;
         this.set({
             x: shape.x,
             y: shape.y
@@ -1139,9 +1120,9 @@ algo.render.Circle.prototype.updateDOM = function () {
 
     var x = this.x,
         y = this.y,
-        sx = this.getInheritedValue('scaleX', 1),
-        sy = this.getInheritedValue('scaleY', 1),
-        r = this.getInheritedValue('rotation', 0),
+        sx = this.getOwnValue('scaleX', 1),
+        sy = this.getOwnValue('scaleY', 1),
+        r = this.getOwnValue('rotation', 0),
         R = this.getInheritedValue('radius', 10),
         sw = this.getInheritedValue('strokeWidth', 0);
 
@@ -1149,15 +1130,20 @@ algo.render.Circle.prototype.updateDOM = function () {
 
     var o = -(R + sw);
 
+    // width and height
+    var size = _.sprintf('%.0fpx', R << 1);
+
     var prop = {
-        width          : (R * 2) + 'px',
-        height         : (R * 2) + 'px',
+        width          : size,
+        height         : size,
         'border-radius': '100%'
     };
 
-    var transform = 'translate3d(' + (x + o) + 'px,' + (y + o) + 'px' + ',0) ' +
-        'rotate(' + r + 'deg) ' +
-        'scale(' + sx + ',' + sy + ')';
+    //var transform = 'translate3d(' + (x + o) + 'px,' + (y + o) + 'px' + ',0) ' +
+    //    'rotate(' + r + 'deg) ' +
+    //    'scale(' + sx + ',' + sy + ')';
+
+    var transform = _.sprintf('translate3d(%.0fpx, %.0fpx, 0px) rotate(%.2fdeg) scale(%.2f, %.2f)', x + o, y + o, r, sx, sy);
 
     // apply with and without browser prefix
 
@@ -1339,14 +1325,14 @@ algo.render.Line.prototype.updateDOM = function () {
     // set DOM with our transform, thickness and width (len)
 
     var prop = {
-        width          : len,
-        height         : p.thickness + 'px',
-        'border-radius': (t / 2) + 'px'
+        width          : _.sprintf('%.0fpx', len),
+        height         : _.sprintf('%.0fpx', p.thickness),
+        'border-radius': _.sprintf('%.0fpx', t / 2)
     };
 
-    var origin = '0px ' + (t / 2) + 'px';
+    var origin = _.sprintf('0px %.0fpx', t / 2);
 
-    var transform = 'translate(' + p.x1 + 'px,' + (p.y1 - t / 2) + 'px) rotate(' + rads + 'rad)';
+    var transform = _.sprintf('translate(%.0fpx, %.0fpx) rotate(%.2frad)', p.x1, p.y1 - t / 2, rads);
 
     prop[algo.render.Element.prefixed('transform-origin')] = origin;
 
@@ -1384,11 +1370,6 @@ algo.render.Line.prototype.fromShape = function (shape) {
     if (!algo.core.isLineLike(shape)) {
         throw new Error("Not line like shape in algo.render.Line::fromShape");
     }
-
-    //this.x1 = shape.x1;
-    //this.y1 = shape.y1;
-    //this.x2 = shape.x2;
-    //this.y2 = shape.y2;
 
     this.set({
         x1: shape.x1,

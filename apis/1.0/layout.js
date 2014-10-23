@@ -826,7 +826,7 @@ algo.layout.Line.rightEdge = function (r) {
  * start and end can be any combination of point like, rectangle like or circle like objects e.g.
  * algo.layout.Vector or {x:0, y:0} or algo.layout.Rect or algo.render.Rect etc.
  *
- *
+
  *
  * @param start - see above
  * @param end - see above
